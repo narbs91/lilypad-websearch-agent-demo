@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Search Demo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Web Search Demo</h1>
+            <p>Ask a question and get AI powered answers from the web</p>
+        </header>
+        
+        <main>
+            <div class="search-container">
+                <input type="text" id="query-input" placeholder="Enter your question...">
+                <button id="search-button">Search</button>
+            </div>
+            
+            <div class="results-container">
+                <div id="loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>Searching the web and generating an answer...</p>
+                </div>
+                
+                <div id="results" class="hidden">
+                    <div class="answer-section">
+                        <h2>Answer</h2>
+                        <div id="answer"></div>
+                    </div>
+                    
+                    <div class="sources-section">
+                        <h2>Sources</h2>
+                        <ul id="sources-list"></ul>
+                    </div>
+                </div>
+                
+                <div id="error" class="error hidden">
+                    <p>Sorry, there was an error processing your request. Please try again.</p>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>Powered by the Lilypad Anura API</p>
+        </footer>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html> 
