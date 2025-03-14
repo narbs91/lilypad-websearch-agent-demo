@@ -11,6 +11,10 @@ Technologies used:
 - JSDOM
 - mozilla/readability
 
+
+https://github.com/user-attachments/assets/36389a7b-8a25-465d-8bd4-5dbb7de0804a
+
+
 ## Prerequisites
 
 - Node.js (v18 or higher)
