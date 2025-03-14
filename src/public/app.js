@@ -27,15 +27,17 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Display the sources
         sourcesListElement.innerHTML = '';
-        sources.forEach(source => {
-            const li = document.createElement('li');
-            const a = document.createElement('a');
-            a.href = source;
-            a.target = '_blank';
-            a.textContent = source;
-            li.appendChild(a);
-            sourcesListElement.appendChild(li);
-        });
+        if (sources && sources.length > 0) {
+            sources.forEach(source => {
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.href = source;
+                a.target = '_blank';
+                a.textContent = source;
+                li.appendChild(a);
+                sourcesListElement.appendChild(li);
+            });
+        }
     }
 
     // Function to show error
@@ -55,8 +57,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         showLoading();
+        answerElement.textContent = ''; // Clear previous results
         
         try {
+            // Create EventSource with POST request
             const response = await fetch('/api/websearch', {
                 method: 'POST',
                 headers: {
@@ -64,16 +68,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 body: JSON.stringify({ query })
             });
-            
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+
+            // Create a reader for the response
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                // Decode the stream chunk and process each line
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+                
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(5));
+                            
+                            if (data.done) {
+                                // Final message with complete results
+                                showResults(data.answer, data.sources);
+                                return;
+                            }
+                            
+                            if (data.text) {
+                                // Streaming chunks of text
+                                answerElement.textContent += data.text;
+                            }
+                            
+                            if (data.error) {
+                                showError();
+                                return;
+                            }
+                        } catch (e) {
+                            console.error('Error parsing SSE data:', e);
+                        }
+                    }
+                }
             }
-            
-            const data = await response.json();
-            showResults(data.answer, data.sources);
         } catch (error) {
             console.error('Error:', error);
             showError();
+        } finally {
+            searchButton.disabled = false;
         }
     }
 

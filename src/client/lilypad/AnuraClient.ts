@@ -16,16 +16,18 @@ export class AnuraClient {
   }
 
   /**
-   * Creates a chat completion using the OpenAI-compatible API
+   * Creates a streaming chat completion using the OpenAI-compatible API
    * 
    * @param model The model to use
    * @param messages The messages to send
+   * @param onChunk Callback function that receives each chunk of the response
    * @param options Additional options
-   * @returns A promise that resolves to the chat completion response
+   * @returns A promise that resolves to the complete response text
    */
-  async createChatCompletion(
+  async createChatCompletionStream(
     model: string,
     messages: ChatMessage[],
+    onChunk: (chunk: string) => void,
     options: {
       temperature?: number;
       max_tokens?: number;
@@ -34,32 +36,60 @@ export class AnuraClient {
       presence_penalty?: number;
       stop?: string[];
     } = {}
-  ) {
+  ): Promise<string> {
     try {
-      const response = await this.openai.chat.completions.create({
+      
+      const stream = await this.openai.chat.completions.create({
         model,
         messages,
-        ...options
+        ...options,
+        stream: true,
       });
-
-      return response;
+      
+      let fullResponse = '';
+      
+      // Process the stream
+      for await (const chunk of stream) {
+        // Handle content in the delta
+        if (chunk.choices && chunk.choices[0]?.delta?.content) {
+          const content = chunk.choices[0].delta.content;
+          
+          fullResponse += content;
+          onChunk(content);
+        }
+        // Handle finish reason
+        else if (chunk.choices && chunk.choices[0]?.finish_reason) {
+          console.log(`Stream finished with reason: ${chunk.choices[0].finish_reason}`);
+        }
+      }
+      
+      onChunk('[DONE]');
+      
+      return fullResponse;
     } catch (error) {
-      console.error('Error calling Anura API:', error);
+      console.error('Error calling Anura API streaming endpoint:', error);
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+      }
+      // Make sure we send the DONE marker even on error
+      onChunk('[DONE]');
       throw error;
     }
   }
 
   /**
-   * Simplified method to get a completion from a prompt
+   * Simplified method to get a streaming completion from a prompt
    * 
    * @param prompt The user's prompt
+   * @param onChunk Callback function that receives each chunk of the response
    * @param model The model to use (defaults to a reasonable model)
    * @param systemPrompt Optional system prompt to set context
-   * @returns The assistant's response text
+   * @returns A promise that resolves when the stream is complete
    */
-  async getCompletion(
-    prompt: string, 
-    model: string = 'llama3.1:8b', 
+  async getCompletionStream(
+    prompt: string,
+    onChunk: (chunk: string) => void,
+    model: string = 'llama3.1:8b',
     systemPrompt?: string
   ): Promise<string> {
     const messages: ChatMessage[] = [];
@@ -70,12 +100,14 @@ export class AnuraClient {
     
     messages.push({ role: 'user', content: prompt });
     
-    const response = await this.createChatCompletion(
+    return await this.createChatCompletionStream(
       model,
       messages,
-      { temperature: 0.7 }
+      onChunk,
+      { 
+        temperature: 0.7,
+        max_tokens: 2048 // Ensure we have enough tokens for a complete response
+      }
     );
-    
-    return response.choices[0].message.content || '';
   }
 }

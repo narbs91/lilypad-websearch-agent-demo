@@ -1,7 +1,6 @@
-import { Router } from 'express';
+import { Router, Response as ExpressResponse } from 'express';
 import { RagService } from '../services/RAGService';
 import { WebsearchController } from '../controllers/WebsearchController';
-import SearchResult from '../models/SearchResult';
 
 /**
  * ApiFacade provides a simplified interface to the complex subsystem of controllers and services.
@@ -23,17 +22,20 @@ export class ApiFacade {
   }
 
   private setupRoutes(): void {
-    // RAG routes
-    this.router.post('/api/websearch', (req, res) => {
+    // Streaming RAG route
+    this.router.post('/api/websearch/stream', (req, res) => {
       const { query } = req.body;
-      this.websearchController.search(query)
-        .then(result => res.json(result))
-        .catch(err => res.status(500).json({ error: err.message }));
+      this.websearchController.searchStream(query, res)
+        .catch(err => {
+          if (!res.writableEnded) {
+            res.status(500).json({ error: err.message });
+          }
+        });
     });
   }
 
-  public async search(query: string): Promise<SearchResult> {
-    return await this.websearchController.search(query);
+  public async searchStream(query: string, res: ExpressResponse): Promise<void> {
+    return await this.websearchController.searchStream(query, res);
   }
 
   /**

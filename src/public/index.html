@@ -9,7 +9,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>Web Search Demo</h1>
+            <h1>RAG Search Demo</h1>
             <p>Ask a question and get AI powered answers from the web</p>
         </header>
         
@@ -22,13 +22,18 @@
             <div class="results-container">
                 <div id="loading" class="loading hidden">
                     <div class="spinner"></div>
-                    <p>Searching the web and generating an answer...</p>
+                    <p>Searching and analyzing web content...</p>
                 </div>
                 
-                <div id="results" class="hidden">
+                <div id="results" class="results">
                     <div class="answer-section">
                         <h2>Answer</h2>
-                        <div id="answer"></div>
+                        <div id="answer" class="answer-text">
+                            <!-- Streaming content will appear here -->
+                        </div>
+                        <div id="answer-loading" class="answer-loading hidden">
+                            <!-- <span class="cursor"></span> -->
+                        </div>
                     </div>
                     
                     <div class="sources-section">
@@ -44,7 +49,7 @@
         </main>
         
         <footer>
-            <p>Powered by the Lilypad Anura API</p>
+            <p>Powered by Lilypad and Anura</p>
         </footer>
     </div>
     

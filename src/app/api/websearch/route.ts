@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { RagService } from '@/services/RAGService';
+import { RagService } from '../../../services/RAGService';
 
 const ragService = new RagService();
 

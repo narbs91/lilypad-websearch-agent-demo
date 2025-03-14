@@ -15,15 +15,20 @@ export class RagService {
         this.searchEngineUrl = process.env.SEARCH_ENGINE_URL || '';
     }
 
-    async search(query: string): Promise<SearchResult> {
+    async searchStream(
+        query: string, 
+        onChunk: (chunk: string) => void
+    ): Promise<SearchResult> {
         const urls = await this.getUrls(query);
         const cleanedText = await this.getCleanedText(urls);
-        const answer = await this.answerQuestion(query, cleanedText);
+        
+        // Start streaming the answer
+        const answer = await this.answerQuestionStream(query, cleanedText, onChunk);
         const searchResult: SearchResult = {
             answer: answer,
             sources: urls
         };
-        return searchResult;
+        return searchResult; // Return the sources
     }
 
     private async getCleanedText(urls: string[]): Promise<string[]> {
@@ -114,9 +119,13 @@ export class RagService {
         }
     }
 
-    private async answerQuestion(query: string, texts: string[]): Promise<string> {
+    private async answerQuestionStream(
+        query: string, 
+        texts: string[], 
+        onChunk: (chunk: string) => void
+    ): Promise<string> {
         try {
-            const response = await this.anura.getCompletion(
+            return await this.anura.getCompletionStream(
                 `Question: ${query}
 
                             Context:
@@ -129,15 +138,16 @@ export class RagService {
                             4. Cite the sources used in your answer
 
                             Answer:`,
+                onChunk,
                 MODEL,
-                `You are a helpful assistant that can answer questions based on the provided context`);
-                
-
-            return response || "No response generated";
+                `You are a helpful assistant that can answer questions based on the provided context`
+            );
         } catch (error) {
-            console.error("Error generating answer:", error);
-            return "Sorry, there was an error generating the answer.";
+            console.error("Error generating streaming answer:", error);
+            onChunk("Sorry, there was an error generating the answer.");
+            onChunk("[DONE]");
         }
+        return "";
     }
 }
 
