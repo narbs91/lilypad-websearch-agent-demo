@@ -1,4 +1,4 @@
-# Websearch API powered by Lilpad
+# Websearch API powered by Lilypad
 
 This is a demo project showcasing the power of the Lilypad Anura API.  This project combines websearch powered by searXNG with AI powered answers using Anura to help answer questions based on the latest happenings provided as context.  The project is an express application with a vanilla frontend meant only for demonstration purposes.
 

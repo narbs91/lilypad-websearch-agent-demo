@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsElement.classList.add('hidden');
         errorElement.classList.add('hidden');
         searchButton.disabled = true;
+        queryInput.disabled = true; // Also disable the input while searching
     }
 
     // Function to show results
@@ -21,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsElement.classList.remove('hidden');
         errorElement.classList.add('hidden');
         searchButton.disabled = false;
+        queryInput.disabled = false; // Re-enable the input
         
         // Display the answer
         answerElement.textContent = answer;
@@ -46,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsElement.classList.add('hidden');
         errorElement.classList.remove('hidden');
         searchButton.disabled = false;
+        queryInput.disabled = false; // Re-enable the input
     }
 
     // Function to perform the search
@@ -56,11 +59,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        showLoading();
-        answerElement.textContent = ''; // Clear previous results
-        
         try {
-            // Create EventSource with POST request
+            showLoading(); // This now disables both button and input
+            answerElement.textContent = ''; // Clear previous results
+            
             const response = await fetch('/api/websearch', {
                 method: 'POST',
                 headers: {
@@ -69,7 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ query })
             });
 
-            // Create a reader for the response
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
 
@@ -77,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                // Decode the stream chunk and process each line
                 const chunk = decoder.decode(value);
                 const lines = chunk.split('\n');
                 
@@ -87,13 +87,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             const data = JSON.parse(line.slice(5));
                             
                             if (data.done) {
-                                // Final message with complete results
                                 showResults(data.answer, data.sources);
                                 return;
                             }
                             
                             if (data.text) {
-                                // Streaming chunks of text
                                 answerElement.textContent += data.text;
                             }
                             
@@ -110,8 +108,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error:', error);
             showError();
-        } finally {
-            searchButton.disabled = false;
         }
     }
 
