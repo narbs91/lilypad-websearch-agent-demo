@@ -38,8 +38,8 @@ app.get('/', (req, res) => {
 app.post('/api/websearch', async (req, res) => {
   const { query } = req.body;
   try {
-    // The searchStream method handles the entire response
-    await apiFacade.searchStream(query, res);
+    // The search method handles the entire response
+    await apiFacade.search(query, res);
     // Don't send another response - the streaming method already handles it
   } catch (error) {
     // Only send an error response if the streaming hasn't started

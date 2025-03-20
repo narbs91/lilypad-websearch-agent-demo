@@ -32,6 +32,20 @@ export class ApiFacade {
           }
         });
     });
+
+    this.router.post('/api/websearch', (req, res) => {
+      const { query } = req.body;
+      this.websearchController.search(query, res)
+        .catch(err => {
+          if (!res.writableEnded) {
+            res.status(500).json({ error: err.message });
+          }
+        });
+    });
+  }
+
+  public async search(query: string, res: ExpressResponse): Promise<void> {
+    return await this.websearchController.search(query, res);
   }
 
   public async searchStream(query: string, res: ExpressResponse): Promise<void> {

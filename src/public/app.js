@@ -71,45 +71,75 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ query })
             });
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                const chunk = decoder.decode(value);
-                const lines = chunk.split('\n');
-                
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        try {
-                            const data = JSON.parse(line.slice(5));
-                            
-                            if (data.done) {
-                                showResults(data.answer, data.sources);
-                                return;
-                            }
-                            
-                            if (data.text) {
-                                answerElement.textContent += data.text;
-                            }
-                            
-                            if (data.error) {
-                                showError();
-                                return;
-                            }
-                        } catch (e) {
-                            console.error('Error parsing SSE data:', e);
-                        }
-                    }
-                }
-            }
+            const data = await response.json();
+            showResults(data.answer, data.sources);
         } catch (error) {
             console.error('Error:', error);
             showError();
         }
     }
+
+    // NOTE: If you'd instead like to use the streaming endpoint, uncomment the following function and comment out the performSearch function above
+    // async function performSearchStream() {
+    //     const query = queryInput.value.trim();
+        
+    //     if (!query) {
+    //         return;
+    //     }
+        
+    //     try {
+    //         showLoading(); // This now disables both button and input
+    //         answerElement.textContent = ''; // Clear previous results
+            
+    //         const response = await fetch('/api/websearch/stream', {
+    //             method: 'POST',
+    //             headers: {
+    //                 'Content-Type': 'application/json'
+    //             },
+    //             body: JSON.stringify({ query })
+    //         });
+
+    //         const data = await response.json();
+    //         showResults(data.answer, data.sources);
+    //         const reader = response.body.getReader();
+    //         const decoder = new TextDecoder();
+
+    //         while (true) {
+    //             const { done, value } = await reader.read();
+    //             if (done) break;
+
+    //             const chunk = decoder.decode(value);
+    //             const lines = chunk.split('\n');
+                
+    //             for (const line of lines) {
+    //                 if (line.startsWith('data: ')) {
+    //                     try {
+    //                         const data = JSON.parse(line.slice(5));
+                            
+    //                         if (data.done) {
+    //                             showResults(data.answer, data.sources);
+    //                             return;
+    //                         }
+                            
+    //                         if (data.text) {
+    //                             answerElement.textContent += data.text;
+    //                         }
+                            
+    //                         if (data.error) {
+    //                             showError();
+    //                             return;
+    //                         }
+    //                     } catch (e) {
+    //                         console.error('Error parsing SSE data:', e);
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     } catch (error) {
+    //         console.error('Error:', error);
+    //         showError();
+    //     }
+    // }
 
     // Event listeners
     searchButton.addEventListener('click', performSearch);
