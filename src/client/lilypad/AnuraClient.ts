@@ -77,6 +77,69 @@ export class AnuraClient {
     }
   }
 
+  async createChatCompletion(
+    model: string,
+    messages: ChatMessage[],
+    options: {
+      temperature?: number;
+      max_tokens?: number;
+      top_p?: number;
+      frequency_penalty?: number;
+      presence_penalty?: number;
+      stop?: string[];
+    } = {}
+  ): Promise<string> {
+    try {
+      const response = await this.openai.chat.completions.create({
+        model,
+        messages,
+        ...options,
+        stream: false,
+      });
+
+      if (response.choices && response.choices[0]?.message?.content) {
+        return response.choices[0].message.content;
+      }
+      
+      throw new Error('No content in response');
+      
+    } catch (error) {
+      console.error('Error calling Anura API:', error);
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+      }
+      throw error;
+    }
+  }
+
+  
+
+
+  async getCompletion(
+    prompt: string,
+    model: string = 'llama3.1:8b',
+    systemPrompt?: string
+  ): Promise<string> {
+    const messages: ChatMessage[] = [];
+  
+    if (systemPrompt) {
+      messages.push({ role: 'system', content: systemPrompt });
+    }
+    
+    messages.push({ role: 'user', content: prompt });
+    
+    const completion = await this.createChatCompletion(
+      model,
+      messages,
+      {
+        temperature: 0.7,
+        max_tokens: 2048 // Ensure we have enough tokens for a complete response
+      }
+    );
+
+    return completion;
+  }
+
   /**
    * Simplified method to get a streaming completion from a prompt
    * 

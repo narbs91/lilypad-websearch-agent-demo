@@ -31,6 +31,19 @@ export class RagService {
         return searchResult; // Return the sources
     }
 
+    async search(
+        query: string,
+    ): Promise<SearchResult> {
+        const urls = await this.getUrls(query);
+        const cleanedText = await this.getCleanedText(urls);
+        const answer = await this.answerQuestion(query, cleanedText);
+        const searchResult: SearchResult = {
+            answer: answer,
+            sources: urls
+        };
+        return searchResult;
+    }
+
     private async getCleanedText(urls: string[]): Promise<string[]> {
         const texts = [];
         for await (const url of urls) {
@@ -119,35 +132,98 @@ export class RagService {
         }
     }
 
+    private async answerQuestion(
+        query: string, 
+        texts: string[], 
+    ): Promise<string> {
+        try {
+            const prompt = `Question: ${query}
+
+                        Context:
+                        ${texts.join("\n\n")}
+
+                        Instructions:
+                        1. Use ONLY the information provided in the context above
+                        2. If the context doesn't contain relevant information, say "I cannot answer this question based on the provided information"
+                        3. Provide a clear, concise answer
+                        4. Cite the sources used in your answer
+
+                        Answer:`;
+
+            const answer = await this.anura.getCompletion(
+                prompt,
+                MODEL,
+                `You are a helpful assistant that can answer questions based on the provided context`
+            );
+
+            return answer;
+        } catch (error) {
+            console.error("Error generating answer:", error);
+            const errorMessage = "Sorry, there was an error generating the answer. Please try again.";
+            return errorMessage;
+        }
+}
+
+
     private async answerQuestionStream(
         query: string, 
         texts: string[], 
         onChunk: (chunk: string) => void
     ): Promise<string> {
+        let fullAnswer = '';
         try {
-            return await this.anura.getCompletionStream(
-                `Question: ${query}
+            const prompt = `Question: ${query}
 
-                            Context:
-                            ${texts.join("\n\n")}
+                        Context:
+                        ${texts.join("\n\n")}
 
-                            Instructions:
-                            1. Use ONLY the information provided in the context above
-                            2. If the context doesn't contain relevant information, say "I cannot answer this question based on the provided information"
-                            3. Provide a clear, concise answer
-                            4. Cite the sources used in your answer
+                        Instructions:
+                        1. Use ONLY the information provided in the context above
+                        2. If the context doesn't contain relevant information, say "I cannot answer this question based on the provided information"
+                        3. Provide a clear, concise answer
+                        4. Cite the sources used in your answer
 
-                            Answer:`,
-                onChunk,
+                        Answer:`;
+
+            await this.anura.getCompletionStream(
+                prompt,
+                (chunk: string) => {
+                    // Skip [DONE] markers
+                    if (chunk === '[DONE]') {
+                        return;
+                    }
+
+                    // Skip error messages
+                    if (chunk.includes('Error:') || chunk.includes('failed to unmarshal')) {
+                        console.error('Received error in chunk:', chunk);
+                        return;
+                    }
+
+                    try {
+                        // Handle the chunk only if it's actual content
+                        if (chunk.trim()) {
+                            fullAnswer += chunk;
+                            onChunk(chunk);
+                        }
+                    } catch (e) {
+                        console.error('Error processing chunk:', e);
+                    }
+                },
                 MODEL,
                 `You are a helpful assistant that can answer questions based on the provided context`
             );
+
+            if (!fullAnswer) {
+                throw new Error('No valid response received from the model');
+            }
+
+            return fullAnswer;
         } catch (error) {
             console.error("Error generating streaming answer:", error);
-            onChunk("Sorry, there was an error generating the answer.");
-            onChunk("[DONE]");
+            const errorMessage = "Sorry, there was an error generating the answer. Please try again.";
+            onChunk(errorMessage);
+            return errorMessage;
         }
-        return "";
     }
 }
 

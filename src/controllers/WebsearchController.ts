@@ -8,6 +8,17 @@ export class WebsearchController {
     constructor(ragService: RagService) {
         this.ragService = ragService;
         this.searchStream = this.searchStream.bind(this);
+        this.search = this.search.bind(this);
+    }
+
+    public async search(query: string, res: ExpressResponse): Promise<void> {
+        try {
+            const result = await this.ragService.search(query);
+            res.json(result);
+        } catch (error) {
+            console.error('Error in search controller:', error);
+            res.status(500).json({ error: 'Failed to process search request' });
+        }
     }
 
     /**
