@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         queryInput.disabled = false; // Re-enable the input
     }
 
-    // Function to perform the search
+    // // Function to perform the search
     async function performSearch() {
         const query = queryInput.value.trim();
         
@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // NOTE: If you'd instead like to use the streaming endpoint, uncomment the following function and comment out the performSearch function above
-    // async function performSearchStream() {
+    // async function performSearch() {
     //     const query = queryInput.value.trim();
         
     //     if (!query) {
@@ -99,22 +99,35 @@ document.addEventListener('DOMContentLoaded', () => {
     //             body: JSON.stringify({ query })
     //         });
 
-    //         const data = await response.json();
-    //         showResults(data.answer, data.sources);
+    //         // Check if response is ok before proceeding
+    //         if (!response.ok) {
+    //             throw new Error(`HTTP error! status: ${response.status}`);
+    //         }
+
+    //         // Verify the response has the correct content type for SSE
+    //         const contentType = response.headers.get('Content-Type');
+    //         if (!contentType || !contentType.includes('text/event-stream')) {
+    //             throw new Error('Expected SSE response but got: ' + contentType);
+    //         }
+
     //         const reader = response.body.getReader();
     //         const decoder = new TextDecoder();
+    //         let buffer = ''; // Add buffer for incomplete chunks
 
     //         while (true) {
     //             const { done, value } = await reader.read();
     //             if (done) break;
 
-    //             const chunk = decoder.decode(value);
-    //             const lines = chunk.split('\n');
+    //             buffer += decoder.decode(value, { stream: true }); // Handle streaming properly
+    //             const lines = buffer.split('\n');
+                
+    //             // Keep the last incomplete line in buffer
+    //             buffer = lines.pop() || '';
                 
     //             for (const line of lines) {
     //                 if (line.startsWith('data: ')) {
     //                     try {
-    //                         const data = JSON.parse(line.slice(5));
+    //                         const data = JSON.parse(line.slice(6).trim()); // Add trim() to handle whitespace
                             
     //                         if (data.done) {
     //                             showResults(data.answer, data.sources);
@@ -130,11 +143,24 @@ document.addEventListener('DOMContentLoaded', () => {
     //                             return;
     //                         }
     //                     } catch (e) {
-    //                         console.error('Error parsing SSE data:', e);
+    //                         console.error('Error parsing SSE data:', e, 'Line:', line);
     //                     }
     //                 }
     //             }
     //         }
+
+    //         // Process any remaining data in buffer
+    //         if (buffer) {
+    //             try {
+    //                 const data = JSON.parse(buffer.slice(6).trim());
+    //                 if (data.text) {
+    //                     answerElement.textContent += data.text;
+    //                 }
+    //             } catch (e) {
+    //                 console.error('Error parsing final buffer:', e);
+    //             }
+    //         }
+
     //     } catch (error) {
     //         console.error('Error:', error);
     //         showError();
