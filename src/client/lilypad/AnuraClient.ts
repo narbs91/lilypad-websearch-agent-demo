@@ -5,6 +5,12 @@ interface ChatMessage {
   content: string;
 }
 
+export interface WebSearchResponse {
+  results: Array<{ url: string }>;
+  related_queries: Array<{ query: string }>;
+  count: number;
+}
+
 export class AnuraClient {
   private openai: OpenAI;
   
@@ -13,6 +19,30 @@ export class AnuraClient {
       baseURL: process.env.ANURA_BASE_URL || 'https://anura-testnet.lilypad.tech/api/v1/',
       apiKey: process.env.ANURA_API_KEY || '',
     });
+  }
+  
+  /**
+   * Fetches web search results from the Anura API
+   * 
+   * @param query The search query
+   * @param numResults The number of results to return (default: 1)
+   * @returns A promise that resolves to the web search response
+   */
+  async webSearchFetch(query: string, numResults: number = 1): Promise<WebSearchResponse> {
+    const response = await fetch(`${process.env.ANURA_BASE_URL}/websearch`, {
+      method: 'POST',
+      body: JSON.stringify({ query: query, number_of_results: numResults }),
+      headers: {
+        'Authorization': `Bearer ${process.env.ANURA_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json() as WebSearchResponse;
   }
 
   /**
@@ -111,9 +141,6 @@ export class AnuraClient {
       throw error;
     }
   }
-
-  
-
 
   async getCompletion(
     prompt: string,

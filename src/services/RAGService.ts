@@ -2,17 +2,15 @@ import * as cheerio from 'cheerio';
 import { Readability } from '@mozilla/readability';
 import { JSDOM } from 'jsdom';
 import SearchResult from '../models/SearchResult';
-import { AnuraClient } from '../client/lilypad/AnuraClient';
+import { AnuraClient, WebSearchResponse } from '../client/lilypad/AnuraClient';
 
 const MODEL = "llama3.1:8b";
 
 export class RagService {   
     private anura: AnuraClient;
-    private searchEngineUrl: string;
 
     constructor() {
         this.anura = new AnuraClient();
-        this.searchEngineUrl = process.env.SEARCH_ENGINE_URL || '';
     }
 
     async searchStream(
@@ -111,19 +109,12 @@ export class RagService {
     }
 
     private async getUrls(query: string): Promise<string[]> {
-        const searchQuery = `${this.searchEngineUrl}?q=${encodeURIComponent(query)}&format=json`;
         
         try {
-            const searchResults = await fetch(searchQuery);
-            if (!searchResults.ok) {
-                throw new Error(`Search request failed: ${searchResults.status}`);
-            }
+            const searchResults = await this.anura.webSearchFetch(query, 3) as WebSearchResponse;
             
-            const searchResultsJson = await searchResults.json() as { results: Array<{ url: string }> };
-            
-            const urls = searchResultsJson.results
+            const urls = searchResults.results
                 .map((result) => result.url)
-                .slice(0, 3);
             
             return urls;
         } catch (error) {
